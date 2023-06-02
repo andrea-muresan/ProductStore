@@ -94,6 +94,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cart.h" />
+    <ClInclude Include="MyListModel.h" />
+    <ClInclude Include="MyTableModel.h" />
     <ClInclude Include="Observer.h" />
     <ClInclude Include="Product.h" />
     <ClInclude Include="ProductRepo.h" />

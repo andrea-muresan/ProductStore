@@ -120,19 +120,8 @@ void UI::buildUI()
 	right->setLayout(lyRight);
 
 	// product table
-	int noLines = 3;
-	int noColumns = 5;
-	this->productTable = new QTableWidget{ noLines, noColumns };
-
-	// table header
-	QStringList tblHeaderList;
-	tblHeaderList << "ID" << "NUME" << "TIP" << "PRET" << "PRODUCATOR";
-	this->productTable->setHorizontalHeaderLabels(tblHeaderList);
-
-	// resize the table according to the content
-	this->productTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-
-	lyRight->addWidget(productTable);
+	tableView->setModel(tableModel);
+	lyRight->addWidget(tableView);
 
 	lyRight->addWidget(btnAddRandomProducts);
 	lyRight->addWidget(btnUndo);
@@ -164,6 +153,24 @@ void UI::buildUI()
 
 void UI::connectSignalsSlots()
 {
+	// if a row from the table is selected
+	QObject::connect(tableView->selectionModel(), &QItemSelectionModel::selectionChanged, [&]() {
+		auto sel = tableView->selectionModel()->selectedIndexes();
+		if (sel.isEmpty())
+		{
+			editId->setText("");
+			editName->setText("");
+			editType->setText("");
+			editPrice->setText("");
+			editProducer->setText("");
+			editIdCart->setText("");
+		}
+		else
+		{
+			auto selItem = sel.at(0);
+			editIdCart->setText(tableView->model()->data(tableView->model()->index(selItem.row(), 0)).toString());
+		}
+		});
 
 	// button to add a product
 	QObject::connect(btnAddProduct, &QPushButton::clicked, this, &UI::guiAddProduct);
@@ -227,7 +234,7 @@ void UI::connectSignalsSlots()
 
 	// button to add some random products
 	QObject::connect(btnAddRandomProducts, &QPushButton::clicked, [&]() {
-		srv.addRandomProducts();
+			srv.addRandomProducts();
 		this->reloadList(srv.getAllProducts());
 		});
 
@@ -310,19 +317,21 @@ void UI::reloadList(vector<Product> productList)
 	this->editPrice->clear();
 	this->editProducer->clear();
 
-	// clean the table
-	this->productTable->clearContents();
-	this->productTable->setRowCount(productList.size());
+	tableModel->setProducts(productList);
 
-	int lineNumber = 0;
-	for (auto& product : productList) {
-		this->productTable->setItem(lineNumber, 0, new QTableWidgetItem(QString::number(product.getId())));
-		this->productTable->setItem(lineNumber, 1, new QTableWidgetItem(QString::fromStdString(product.getName())));
-		this->productTable->setItem(lineNumber, 2, new QTableWidgetItem(QString::fromStdString(product.getType())));
-		this->productTable->setItem(lineNumber, 3, new QTableWidgetItem(QString::number(product.getPrice())));
-		this->productTable->setItem(lineNumber, 4, new QTableWidgetItem(QString::fromStdString(product.getProducer())));
-		lineNumber++;
-	}
+	//// clean the table
+	//this->productTable->clearContents();
+	//this->productTable->setRowCount(productList.size());
+
+	//int lineNumber = 0;
+	//for (auto& product : productList) {
+	//	this->productTable->setItem(lineNumber, 0, new QTableWidgetItem(QString::number(product.getId())));
+	//	this->productTable->setItem(lineNumber, 1, new QTableWidgetItem(QString::fromStdString(product.getName())));
+	//	this->productTable->setItem(lineNumber, 2, new QTableWidgetItem(QString::fromStdString(product.getType())));
+	//	this->productTable->setItem(lineNumber, 3, new QTableWidgetItem(QString::number(product.getPrice())));
+	//	this->productTable->setItem(lineNumber, 4, new QTableWidgetItem(QString::fromStdString(product.getProducer())));
+	//	lineNumber++;
+	//}
 }
 
 void UI::guiAddProduct()
@@ -552,24 +561,10 @@ void CartUI::buildUI()
 	QVBoxLayout* lyRight = new QVBoxLayout;
 	right->setLayout(lyRight);
 
-	productLst = new QListWidget;
+	listView->setUniformItemSizes(true);
+	listView->setModel(listModel);
 	
-	lyRight->addWidget(productLst);
-	
-	//// product table
-	//int noLines = 3;
-	//int noColumns = 5;
-	//this->productTable = new QTableWidget{ noLines, noColumns };
-
-	//// table header
-	//QStringList tblHeaderList;
-	//tblHeaderList << "ID" << "NUME" << "TIP" << "PRET" << "PRODUCATOR";
-	//this->productTable->setHorizontalHeaderLabels(tblHeaderList);
-
-	//// resize the table according to the content
-	//this->productTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-
-	///lyRight->addWidget(productTable);
+	lyRight->addWidget(listView);
 
 	// add the right part
 	lyMain->addWidget(right);
@@ -581,6 +576,16 @@ void CartUI::connectSignalsSlots()
 	this->reloadList(srv.getCart());
 	cart.addObserver(this);
 
+	// a row is selected
+	QObject::connect(listView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [&]() {
+		auto sel = listView->selectionModel()->selectedIndexes();
+		if (sel.isEmpty()) {
+			return;
+		}
+		auto selItem = sel.at(0);
+		editAdd->setText(listView->model()->data(selItem).toString().split(" ").at(1));
+		});
+
 	// button to add a product to the cart
 	QObject::connect(btnAdd, &QPushButton::clicked, [&]() {
 		string id = this->editAdd->text().toStdString();
@@ -589,6 +594,7 @@ void CartUI::connectSignalsSlots()
 		if (error != "") // error for invalid data
 			QMessageBox::warning(this, QString::fromStdString("Eroare!"), QString::fromStdString(error));
 		else this->reloadList(srv.getCart());
+		
 		});
 
 	// button to generate products to the cart
@@ -625,23 +631,6 @@ void CartUI::reloadList(vector<Product> cartList)
 	this->editGenerate->clear();
 	this->editExport->clear();
 
-	productLst->clear();
-	for (auto& p : cartList)
-	{
-		productLst->addItem("- " + QString::number(p.getId()) + ": "+ QString::fromStdString(p.getName()) + ", " + QString::fromStdString(p.getType()) + ", " + QString::number(p.getPrice()) + ", " + QString::fromStdString(p.getProducer()));
-	}
-
-	//// clean the table
-	//this->productTable->clearContents();
-	//this->productTable->setRowCount(cartList.size());
-
-	/*int lineNumber = 0;
-	for (auto& product : cartList) {
-		this->productTable->setItem(lineNumber, 0, new QTableWidgetItem(QString::number(product.getId())));
-		this->productTable->setItem(lineNumber, 1, new QTableWidgetItem(QString::fromStdString(product.getName())));
-		this->productTable->setItem(lineNumber, 2, new QTableWidgetItem(QString::fromStdString(product.getType())));
-		this->productTable->setItem(lineNumber, 3, new QTableWidgetItem(QString::number(product.getPrice())));
-		this->productTable->setItem(lineNumber, 4, new QTableWidgetItem(QString::fromStdString(product.getProducer())));
-		lineNumber++;
-	}*/
+	listModel->setProducts(cartList);
 }
+

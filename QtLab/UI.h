@@ -1,6 +1,8 @@
 #pragma once
 #include "ProductService.h"
 #include "Observer.h"
+#include "MyListModel.h"
+#include "MyTableModel.h"
 
 #include <QtWidgets>
 
@@ -31,8 +33,10 @@ private:
 	QLineEdit* editGenerate = new QLineEdit;
 	QLineEdit* editExport = new QLineEdit;
 
-	QTableWidget* productTable;
-	QListWidget* productLst;
+	/*QListWidget* productLst;*/
+	QListView* listView = new QListView;
+	MyListModel* listModel = new MyListModel;
+
 public:
 	CartUI(ProductService& srv, Cart& cart) : srv{ srv }, cart{ cart } {}
 	void buildUI();
@@ -297,7 +301,9 @@ private:
 	QGroupBox* groupBoxCart = new QGroupBox(tr("Cos de cumparaturi"));
 
 
-	QTableWidget* productTable;
+	// QTableWidget* productTable;
+	QTableView* tableView = new QTableView;
+	MyTableModel* tableModel = new MyTableModel;
 
 public:
 	UI(ProductService& srv);
