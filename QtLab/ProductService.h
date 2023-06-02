@@ -73,6 +73,10 @@ public:
 	vector<Product> getCart();
 	// Export the products from the cart to a html file
 	string Export(string fileName);
+	// Return the cart object
+	Cart& getCartObj() {
+		return cart;
+	}
 
 	// UNDO function
 	// Return an error message if we cannot undo the action, "" otherwise

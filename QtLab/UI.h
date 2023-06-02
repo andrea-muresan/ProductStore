@@ -1,14 +1,16 @@
 #pragma once
 #include "ProductService.h"
+#include "Observer.h"
 
 #include <QtWidgets>
 
-class CartUI : public QWidget
+class CartUI : public QWidget, public Observer, public Observable
 {
 	friend class Service;
 	friend class UI;
 
 private:
+	Cart& cart;
 	ProductService& srv;
 
 	QPushButton* btnEmptyCart = new QPushButton("Goleste cos");
@@ -32,10 +34,127 @@ private:
 	QTableWidget* productTable;
 	QListWidget* productLst;
 public:
-	CartUI(ProductService& srv) : srv{srv}{}
+	CartUI(ProductService& srv, Cart& cart) : srv{ srv }, cart{ cart } {}
 	void buildUI();
 	void connectSignalsSlots();
 	void reloadList(vector<Product> cartList);
+
+	void update() override {
+		reloadList(cart.getList());
+	}
+
+	~CartUI() {
+		cart.removeObserver(this);
+	}
+
+};
+
+class CartReadOnlyGUI : public QWidget, public Observer {
+	friend class Cart;
+	Cart& cart;
+
+	QListWidget* cartList;
+public:
+	CartReadOnlyGUI(Cart& c) : cart(c)
+	{
+		//this->buildUI();
+		cart.addObserver(this);
+	}
+	void buildUI()
+	{
+		cartList = new QListWidget();
+		QHBoxLayout* mainly = new QHBoxLayout;
+		mainly->addWidget(cartList);
+		this->setLayout(mainly);
+	}
+	void update() override {
+		//this->reloadList();
+		this->repaint();
+	}
+	void reloadList()
+	{
+		cartList->clear();
+		for (auto elem : cart.getList())
+		{
+			cartList->addItem(QString::fromStdString(elem.getName()));
+		}
+	}
+
+	void paintEvent(QPaintEvent* ev) override
+	{
+		QPainter p(this);
+
+		/*p.drawImage(0, 0, QImage("floare.jpg"));
+		srand(time(0));*/
+
+		int x = -20;
+		for (auto elem : cart.getList())
+		{
+			x += 40;
+			int forma = rand() % 4;
+			int inaltime = rand() % 130;
+			int start_y = rand() % 60;
+			QColor color;
+
+			int color_num = rand() % 10;
+			switch (color_num)
+			{
+			case 0:
+				color = Qt::red;
+				break;
+			case 1:
+				color = Qt::green;
+				break;
+			case 2:
+				color = Qt::black;
+				break;
+			case 3:
+				color = Qt::blue;
+				break;
+			case 4:
+				color = Qt::lightGray;
+				break;
+			case 5:
+				color = Qt::yellow;
+				break;
+			case 6:
+				color = Qt::cyan;
+				break;
+			case 7:
+				color = Qt::magenta;
+				break;
+			case 8:
+				color = Qt::darkGreen;
+				break;
+			case 9:
+				color = Qt::darkBlue;
+				break;
+			default:
+				break;
+			}
+
+			switch (forma)
+			{
+			case 0: // dreptunghi
+				p.drawRect(x, start_y, 20, inaltime);
+				break;
+			case 1: // elipsa
+				p.drawEllipse(x, start_y, 20, inaltime);
+				break;
+			case 2: // dreptunghi colorat
+				p.fillRect(x, start_y, 20, inaltime, color);
+				break;
+			default: // dreptunghi colorat
+				p.fillRect(x, start_y, 20, inaltime, color);
+				break;
+			}
+		}
+	}
+
+	~CartReadOnlyGUI()
+	{
+		cart.removeObserver(this);
+	}
 };
 
 class DeleteUI : public QWidget
@@ -124,7 +243,8 @@ private:
 	DeleteUI* deleteProductUI;
 	UpdateUI* updateProductUI;
 	SearchUI* searchProductUI;
-	CartUI*	cartProductUI;
+	/*CartUI*	cartProductUI;*/
+	//CartReadOnlyGUI* cartDrawings;
 
 	QLabel* lblId = new QLabel{ "ID-ul produsului:" };
 	QLabel* lblName = new QLabel{ "Numele produsului:" };
@@ -162,12 +282,22 @@ private:
 
 	QPushButton* btnAddRandomProducts = new QPushButton("Adauga cateva produse");
 	QPushButton* btnUndo = new QPushButton("Anuleaza ultima operatie - UNDO");
-	QPushButton* btnCart = new QPushButton("Deschide cosul de cumparaturi");
 	QPushButton* btnReportType = new QPushButton("Raport produse - tip");
+
+	// cart
+	QPushButton* btnCart = new QPushButton("Deschide cosul de cumparaturi");
+	QPushButton* btnCartDrawings = new QPushButton("Cos - desene");
+	QPushButton* btnAddRandomCart = new QPushButton("Adauga cateva produse in cos");
+	QPushButton* btnAddToCart = new QPushButton("Adauga in cos");
+	QPushButton* btnEmptyCart = new QPushButton("Goleste cosul");
+	QLabel* lblIdCart = new QLabel{ "ID-ul produsului:" };
+	QLabel* lblNrCart = new QLabel{ "Numar de produse:" };
+	QLineEdit* editIdCart = new QLineEdit;
+	QLineEdit* editNrCart = new QLineEdit;
+	QGroupBox* groupBoxCart = new QGroupBox(tr("Cos de cumparaturi"));
 
 
 	QTableWidget* productTable;
-	QPushButton* btnAddToCart = new QPushButton("+");
 
 public:
 	UI(ProductService& srv);

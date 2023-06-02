@@ -1,5 +1,6 @@
 #pragma once
 #include "Product.h"
+#include "Observer.h"
 
 #include <algorithm>  
 #include <random>
@@ -9,7 +10,7 @@
 
 
 
-class Cart
+class Cart : public Observable
 {
 private:
 	std::vector<Product> cartList;

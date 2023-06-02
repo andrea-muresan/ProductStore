@@ -3,11 +3,15 @@
 
 void Cart::emptyCart() noexcept {
 	this->cartList.clear();
+
+	notify();
 }
 
 void Cart::add(Product x)
 {
 	this->cartList.push_back(x);
+
+	notify();
 }
 
 void Cart::generate(int x, std::vector<Product> v)
@@ -18,6 +22,8 @@ void Cart::generate(int x, std::vector<Product> v)
 		int rnd = rand() % v.size();
 		this->add(v.at(rnd));
 	}
+
+	notify();
 }
 
 std::vector<Product> Cart::getList()

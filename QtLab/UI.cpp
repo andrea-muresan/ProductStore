@@ -18,9 +18,12 @@ UI::UI(ProductService& srv) : srv{ srv }
 	searchProductUI->connectSignalsSlots();
 
 	// cart window
-	this->cartProductUI = new CartUI(srv);
+	/*this->cartProductUI = new CartUI(srv, srv.getCartObj());
 	cartProductUI->buildUI();
-	cartProductUI->connectSignalsSlots();
+	cartProductUI->connectSignalsSlots();*/
+
+	// cart window drawings
+	/*this->cartDrawings = new CartReadOnlyGUI(srv.getCartObj());*/
 
 }
 
@@ -133,8 +136,26 @@ void UI::buildUI()
 
 	lyRight->addWidget(btnAddRandomProducts);
 	lyRight->addWidget(btnUndo);
-	lyRight->addWidget(btnCart);
 	lyRight->addWidget(btnReportType);
+
+	// CART
+	QVBoxLayout* lyCartBox = new QVBoxLayout;
+	this->groupBoxCart->setLayout(lyCartBox);
+
+	QFormLayout* lyCart = new QFormLayout;
+	lyCartBox->addLayout(lyCart);
+
+	lyCart->addRow(lblIdCart, editIdCart);
+	lyCart->addWidget(btnAddToCart);
+
+	lyCart->addRow(lblNrCart, editNrCart);
+	lyCart->addWidget(btnAddRandomCart);
+	
+	lyCart->addRow(btnEmptyCart);
+	lyCart->addRow(btnCart, btnCartDrawings);
+
+
+	lyRight->addWidget(groupBoxCart);
 
 	// add the right part
 	lyMain->addWidget(right);
@@ -210,11 +231,6 @@ void UI::connectSignalsSlots()
 		this->reloadList(srv.getAllProducts());
 		});
 
-	// button to open the cart
-	QObject::connect(btnCart, &QPushButton::clicked, [&]() {
-		cartProductUI->show();
-		});
-
 	// button to show the report (how many products of each type exist)
 	QObject::connect(btnReportType, &QPushButton::clicked, [&]() {
 
@@ -244,8 +260,45 @@ void UI::connectSignalsSlots()
 			reportTable->setItem(lineNumber, 1, new QTableWidgetItem(QString::number(product.second)));;
 			lineNumber++;
 		}
+		});
 
+	// button to add random products to the cart
+	QObject::connect(btnAddRandomCart, &QPushButton::clicked, [&]() {
+		string nr = editNrCart->text().toStdString();
+		editNrCart->clear();
 
+		string error = srv.generate(nr);
+		if (error != "") // error for invalid data
+			QMessageBox::warning(this, QString::fromStdString("Eroare!"), QString::fromStdString(error));
+		});
+
+	// button to add to the cart
+	QObject::connect(btnAddToCart, &QPushButton::clicked, [&]() {
+		string id = editIdCart->text().toStdString();
+		editIdCart->clear();
+
+		string error = srv.addToCart(id);
+		if (error != "") // error for invalid data
+			QMessageBox::warning(this, QString::fromStdString("Eroare!"), QString::fromStdString(error));
+		});
+
+	// button to empty the cart
+	QObject::connect(btnEmptyCart, &QPushButton::clicked, [&]() {
+		srv.emptyCart();
+		});
+
+	// button to open the cart
+	QObject::connect(btnCart, &QPushButton::clicked, [&]() {
+		CartUI* cartProductUI = new CartUI(srv, srv.getCartObj());
+		cartProductUI->buildUI();
+		cartProductUI->connectSignalsSlots();
+		cartProductUI->show();
+		});
+
+	// button to open the cart drawings
+	QObject::connect(btnCartDrawings, &QPushButton::clicked, [&]() {
+		CartReadOnlyGUI* cartDrawings = new CartReadOnlyGUI(srv.getCartObj());
+		cartDrawings->show();
 		});
 }
 
@@ -524,7 +577,9 @@ void CartUI::buildUI()
 
 void CartUI::connectSignalsSlots()
 {
+	
 	this->reloadList(srv.getCart());
+	cart.addObserver(this);
 
 	// button to add a product to the cart
 	QObject::connect(btnAdd, &QPushButton::clicked, [&]() {

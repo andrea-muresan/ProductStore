@@ -185,7 +185,10 @@ string ProductService::addToCart(string id)
 {
     if (!val.validateId(id))
         return "ID invalid";
-    Product x = this->repo.getAllProducts().at(repo.findProduct(stoi(id)));
+    int pos = repo.findProduct(stoi(id));
+    if (pos == -1)
+        return "ID inexistent";
+    Product x = this->repo.getAllProducts().at(pos);
     this->cart.add(x);
     return "";
 }
